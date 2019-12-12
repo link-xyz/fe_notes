@@ -1,5 +1,26 @@
 ## 为什么需要中间件
-接触过 Express 的同学对“中间件”这个名词应该并不陌生。在 Express 中，中间件就是一些用于定制对特定请求的处理过程的函数。作为中间件的函数是相互独立的，可以提供诸如记录日志、返回特定响应报头、压缩等操作。
+接触过 Express 的同学对“中间件”应该并不陌生。在 Express 中，中间件就是定义了对特定请求处理过程的函数。作为中间件的函数是相互独立的，可以提供诸如记录日志、返回特定响应报头、压缩等操作。
+
+一个典型的 Express 中间件如下所示：
+
+```javascript
+// a middleware function with no mount path. This code is executed for every request to the router
+router.use(function (req, res, next) {
+  console.log('Time:', Date.now());
+  next();
+});
+
+// a middleware sub-stack shows request info for any type of HTTP request to the /user/:id path
+router.use('/user/:id', function(req, res, next) {
+  console.log('Request URL:', req.originalUrl);
+  next();
+}, function (req, res, next) {
+  console.log('Request Type:', req.method);
+  next();
+});
+```
+
+中间件函数能够访问请求对象 (req)、响应对象 (res) 以及应用程序的请求/响应循环中的下一个中间件函数。下一个中间件函数通常由名为 `next` 的变量来表示。
 
 同样的，在 Redux 中，action 对象对应于 Express 中的客户端请求，会被 Store 中的中间件依次处理。如下图所示：
 
@@ -9,13 +30,13 @@
 
 - 中间件是独立的函数
 - 中间件可以组合使用
-- 中间件有一个统一的接口
+- 中间件统一的接口
 
-这里采用了 AOP （面向切面编程）的思想。
+这里采用了 AOP （面向切面编程）思想。
 
-对于面向对象思想，当需要对逻辑增加扩展功能时（如发送请求前的校验、打印日志等），我们只能在所在功能模块添加额外的扩展功能；或者选择共有类通过继承方式调用，但是这将导致共有类的膨胀。否则，就只有将其散落在业务逻辑的各个角落，造成代码耦合。
+对于面向对象，当需要对逻辑增加扩展功能时（如发送请求前的校验、打印日志等），我们只能在对应功能模块添加额外的扩展功能；或者选择共有类通过继承方式调用，但这将导致共有类的膨胀。否则，就只有将其散落在业务逻辑的各个角落，导致代码耦合。
 
-而使用 AOP 的思想，可以解决代码冗余、耦合问题。我们可以将扩展功能代码单独放入一个切面，待执行的时候才将其载入到需要扩展功能的位置，即切点。这样的好处是不用更改本身的业务逻辑代码，这种通过串联的方式传递调用扩展功能也是中间件的原理。
+而使用 AOP，可以解决代码冗余、耦合的问题。我们可以将扩展功能代码单独放入一个切面，待执行的时候才将其载入到需要扩展功能的位置，即切点。这样的好处是不用更改本身的业务逻辑代码，这种通过串联的方式传递调用扩展功能也是中间件的原理。
 
 ## 从零开发一个中间件
 
@@ -23,7 +44,7 @@
 
 ### 最简单的中间件
 
-例如，可以编写一个什么事都不做的中间件：
+例如，可以编写一个什么都不做的中间件：
 
 ```javascript
 function doNothingMiddleware ({ dispatch, getState }) {
@@ -40,8 +61,6 @@ function doNothingMiddleware ({ dispatch, getState }) {
 ```javascript
 const doNothingMiddleware = ({ dispatch, getState }) => (next) => (action) => next(action)
 ```
-
-可以看出，中间件通过定义函数、接收函数、返回函数，来对 action 对象进行处理。
 
 不管是中间件的实现，还是中间件的使用，都是让每个函数的功能尽量小，然后通过函数的嵌套组合来实现复杂功能，这是**函数式编程**中的重要思想。
 
@@ -79,7 +98,7 @@ const crashReporter = ({ dispatch, getState }) => next => action => {
 
 ### 在 Redux 中组合使用中间件
 
-在 Redux 中，通过 `applyMiddleware` 来使用中间件：
+在 Redux 中，通过 `applyMiddleware` 来应用中间件：
 
 ```javascript
 import { createStore, combineReducers, applyMiddleware } from 'redux'
@@ -93,7 +112,7 @@ const store = createStore(
 
 通过 `store.dispatch(addTodo('use redux'))` 触发一个 action，将先后被 `logger` 和 `crashReporter` 两个中间件处理。
 
-接下来我们看看 Redux 是怎么实现中间件调用的，这是 Redux 中的部分源码：
+接下来我们看看 Redux 是怎么实现中间件的，这是 Redux 中的部分源码：
 
 ```typescript
 export default function applyMiddleware(
@@ -137,7 +156,7 @@ export default function applyMiddleware(
 
 首先，将 `applyMiddleware` 函数中传入的中间件按顺序生成一个队列 `chain`，队列中每个元素都是中间件调用后的结果，它们都具有相同的结构 `next => action => {}`。
 
-然后，通过 `compose` 方法，将这些中间件队列串联起来。`compose` 是一个从右向左的嵌套包裹函数，也是函数式编程中的常用范式，实现如下：
+然后，通过 `compose` 方法，将这些中间件队列串联起来。`compose` 是一个从右向左的嵌套包裹函数，也是**函数式编程**中的常用范式，实现如下：
 
 ```typescript
 export default function compose(...funcs: Function[]) {
@@ -160,7 +179,7 @@ export default function compose(...funcs: Function[]) {
 - M2 中的 `next` 为 `C3(store.dispatch)`
 - M1 中的 `next` 为 `C2(C3(store.dispatch))`
 
-最终将 `C1(C2(C3(store.dispatch)))` 作为新的 `dispatch` 挂载在 `store` 中返回给用户，作为用户实际调用的 `dispatch` 方法。由于已经层层调用了 C3，C2，C1，中间件的结构已经从 `next => action => {}` 被拆解为 `acion => {}`
+最终将 `C1(C2(C3(store.dispatch)))` 作为新的 `dispatch` 挂载在 `store` 中返回给用户，作为用户实际调用的 `dispatch` 方法。由于已经层层调用了 C3，C2，C1，中间件的结构已经从 `next => action => {}` 被拆解为 `acion => {}`。此时，又回到了 `dispatch(action)` 的结构。
 
 我们可以梳理一遍当用户触发一个 action 的完整流程：
 
@@ -174,7 +193,7 @@ export default function compose(...funcs: Function[]) {
 8. 执行 C2 中 `next(action)` 之后的代码
 9. 执行 C1 中 `next(action)` 之后的代码
 
-其实这就是所谓的洋葱模型，Koa 中的中间件执行机制也是如此。
+这就是所谓的洋葱模型，Koa 中的中间件执行机制也是如此。
 
 <img src='https://user-images.githubusercontent.com/58578193/70387679-e6943f80-19e2-11ea-9d36-b72291767e24.png'  width='400' />
 
@@ -191,21 +210,22 @@ store.subscribe(() => console.log("store change", store.getState()));
 store.dispatch({ type: "INCREMENT" });
 ```
 
-，结果将是
+结果将是
 
 ![image](https://user-images.githubusercontent.com/58578193/70387959-b2bb1900-19e6-11ea-9633-3abaa4e8942b.png)
 
-先触发 logger，输出 `dispatching`，执行 `next(action)`；然后在 crashReporter 中无异常，没有输出；执行 Reducer，得到新的 state，store 中监听到状态变化，输出 `store change`；最后执行 logger 中 `next` 之后的语句
+先触发 logger，输出 `dispatching`，执行 `next(action)`；然后在 crashReporter 中无异常，没有输出；执行 Reducer，得到新的 state，store 中监听到状态变化，输出 `store change`；最后执行 logger 中 `next` 之后的语句。
 
 如果是 `store.dispatch()`，因为 action 必须是一个对象，所以在 crashReporter 中将会捕获异常，并抛出错误，结果为：
 
 ![image](https://user-images.githubusercontent.com/58578193/70388006-3e34aa00-19e7-11ea-8500-ac9636aa9d54.png)
 
-【[demo](https://codesandbox.io/s/redux-demo-nm51e) https://codesandbox.io/s/redux-demo-nm51e】
+[demo](https://codesandbox.io/s/redux-demo-nm51e) 
+https://codesandbox.io/s/redux-demo-nm51e
 
 ## redux-thunk
 
-这个应该是最常用到的 Redux 中间件了，是我们在 Redux 中处理异步请求的常用方案。redux-thunk 的实现非常简单，只有[ 14 行代码（包括空行）](https://github.com/reduxjs/redux-thunk/blob/master/src/index.js)：
+这应该是最常用到的 Redux 中间件，也是我们在 Redux 中处理异步请求的常用方案。redux-thunk 的实现非常简单，只有[ 14 行代码（包括空行）](https://github.com/reduxjs/redux-thunk/blob/master/src/index.js)：
 
 ```javascript
 function createThunkMiddleware(extraArgument) {
