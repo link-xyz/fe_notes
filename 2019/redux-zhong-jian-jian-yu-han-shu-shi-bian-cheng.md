@@ -1,4 +1,7 @@
+# redux 中间件与函数式编程
+
 ## 为什么需要中间件
+
 接触过 Express 的同学对“中间件”应该并不陌生。在 Express 中，中间件就是定义了对特定请求处理过程的函数。作为中间件的函数是相互独立的，可以提供诸如记录日志、返回特定响应报头、压缩等操作。
 
 一个典型的 Express 中间件如下所示：
@@ -20,7 +23,7 @@ router.use('/user/:id', function(req, res, next) {
 });
 ```
 
-中间件函数能够访问请求对象 (req)、响应对象 (res) 以及应用程序的请求/响应循环中的下一个中间件函数。下一个中间件函数通常由名为 `next` 的变量来表示。
+中间件函数能够访问请求对象 \(req\)、响应对象 \(res\) 以及应用程序的请求/响应循环中的下一个中间件函数。下一个中间件函数通常由名为 `next` 的变量来表示。
 
 同样的，在 Redux 中，action 对象对应于 Express 中的客户端请求，会被 Store 中的中间件依次处理。如下图所示：
 
@@ -28,9 +31,9 @@ router.use('/user/:id', function(req, res, next) {
 
 中间件可以实现通用逻辑的重用，通过组合不同中间件可以完成复杂功能。它具有下面特点：
 
-- 中间件是独立的函数
-- 中间件可以组合使用
-- 中间件统一的接口
+* 中间件是独立的函数
+* 中间件可以组合使用
+* 中间件统一的接口
 
 这里采用了 AOP （面向切面编程）思想。
 
@@ -175,9 +178,9 @@ export default function compose(...funcs: Function[]) {
 
 假设 `chain` 是包含 C1、C2、C3（对应 M1，M2，M3 第一层函数返回值） 三个函数的数组，那么 `compose(...chain)(store.dispatch)` 即为 `C1(C2(C3(store.dispatch)))`，而且：
 
-- `applyMiddleware` 的最后一个中间件 M3 中的 `next` 就是原始的 `store.dispatch`
-- M2 中的 `next` 为 `C3(store.dispatch)`
-- M1 中的 `next` 为 `C2(C3(store.dispatch))`
+* `applyMiddleware` 的最后一个中间件 M3 中的 `next` 就是原始的 `store.dispatch`
+* M2 中的 `next` 为 `C3(store.dispatch)`
+* M1 中的 `next` 为 `C2(C3(store.dispatch))`
 
 最终将 `C1(C2(C3(store.dispatch)))` 作为新的 `dispatch` 挂载在 `store` 中返回给用户，作为用户实际调用的 `dispatch` 方法。由于已经层层调用了 C3，C2，C1，中间件的结构已经从 `next => action => {}` 被拆解为 `acion => {}`。此时，又回到了 `dispatch(action)` 的结构。
 
@@ -195,7 +198,7 @@ export default function compose(...funcs: Function[]) {
 
 这就是所谓的洋葱模型，Koa 中的中间件执行机制也是如此。
 
-<img src='https://user-images.githubusercontent.com/58578193/70387679-e6943f80-19e2-11ea-9d36-b72291767e24.png'  width='400' />
+![](https://user-images.githubusercontent.com/58578193/70387679-e6943f80-19e2-11ea-9d36-b72291767e24.png)
 
 对于上面的 `applyMiddleware(logger, crashReporter)`，如果我们执行
 
@@ -220,8 +223,7 @@ store.dispatch({ type: "INCREMENT" });
 
 ![image](https://user-images.githubusercontent.com/58578193/70388006-3e34aa00-19e7-11ea-8500-ac9636aa9d54.png)
 
-[demo](https://codesandbox.io/s/redux-demo-nm51e) 
-https://codesandbox.io/s/redux-demo-nm51e
+[demo](https://codesandbox.io/s/redux-demo-nm51e) [https://codesandbox.io/s/redux-demo-nm51e](https://codesandbox.io/s/redux-demo-nm51e)
 
 ## redux-thunk
 
@@ -284,6 +286,8 @@ function incrementIfOdd() {
 ```
 
 ## 参考文章
+
 [《深入浅出 React 和 Redux》·程墨](https://book.douban.com/subject/27033213//)
 
 [《redux 中间件入门到编写，到改进，到出门》](https://quanru.github.io/2017/03/18/%E7%BC%96%E5%86%99%20redux%20%E4%B8%AD%E9%97%B4%E4%BB%B6/)
+
